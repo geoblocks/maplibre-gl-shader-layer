@@ -110,6 +110,7 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
   protected altitude = 0;
   protected isVisible = true;
   protected readonly defaultVertexShader = defaultVertexShader;
+  private hasRenderedOnce = false;
 
   constructor(id: string, options: BaseShaderTiledLayerOptions = {}) {
     this.id = id;
@@ -247,6 +248,8 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
     // From z14+ the tile positioning is computed as relative to the center of the map
     const relativeTilePosition = zoom >= 14;
 
+    const promises = [];
+
     const updatePositioningMethod = (tile: Tile, tileIndex: TileIndex) => {
       if (relativeTilePosition) {
         const { mercSize, mercCenter } = tileIndexToMercatorCenterAndSize(tileIndex);
@@ -282,7 +285,7 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
         usedTileMapPrevious.delete(tileID);
         this.scene.add(tile);
 
-        this.updateTileMaterial(tile, zoom, isGlobe, relativeTilePosition);
+        promises.push(this.updateTileMaterial(tile, zoom, isGlobe, relativeTilePosition));
       } else {
         // This tile is not in the pool
         tilesToAdd.push(tileIndex);
@@ -335,7 +338,7 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
       usedTileMapNew.set(tileID, tile);
       tile.setTileIndex(tileIndex);
       this.scene.add(tile);
-      this.updateTileMaterial(tile, zoom, isGlobe, relativeTilePosition);
+      promises.push(this.updateTileMaterial(tile, zoom, isGlobe, relativeTilePosition));
     }
 
     this.usedTileMap = usedTileMapNew;
@@ -355,6 +358,15 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
       this.renderer.resetState();
       this.renderer.render(this.scene, this.camera);
     }
+
+    // Ensure a refresh after all the material updates.
+    // This is to make sure that tiles loaded async will update
+    Promise.allSettled(promises).then(() => {
+      if (!this.hasRenderedOnce) {
+        this.map.triggerRepaint();
+        this.hasRenderedOnce = true;
+      }
+    });
   }
 
   private async updateTileMaterial(tile: Tile, zoom: number, isGlobe: boolean, relativeTilePosition: boolean) {

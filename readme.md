@@ -147,6 +147,36 @@ All the fields of the payload are captured by the style definition `MultiChannel
 
 ![multichan-layer](resources/screenshots/multichan.png)
 
+**About fetching tiles:** by default, an instance of `MultiChannelSeriesTiledLayer` expects a configuration that contains tile pattern URLs for each series, and at the end, expects a static file for each tile (or a server endpoint that would serve a tile). But it may happen that a tile **is not** a static file and is, for instance, part of a **PMTiles**. To solve this, the constructor options (see [MultiChannelSeriesTiledLayerOptions](src/lib/layers/MultiChannelSeriesTiledLayer.ts)) can be provided `customTileTextureLoader`, which has this signature:
+```ts
+type CustomSeriesTileTextureLoader = (tileIndex: TileIndex, seriesAxisValue: number) => Promise<Texture | null>;
+```
+
+Here is an example of how to leverage this and no longer rely on static tile files:
+
+```ts
+const layer = new MultiChannelSeriesTiledLayer("custom-layer", {
+  // ... other options
+
+  customTileTextureLoader: async (tileIndex: TileIndex, serieAxisValue: number) => {
+    // Get the tile
+    // Could equaly be looking into a PMTiles file)
+    const tileUrl = `https://example.com/${serieAxisValue.toString()}/${tileIndex.z.toString()}/${tileIndex.x.toString()}/${tileIndex.y.toString()}.webp`
+    const tileRes = await fetch(tileUrl);
+
+    if (!tileRes.ok) return null;
+
+    // Blob --> Blob --> ImageBitmap --> THREE.Texture
+    const tileBlob = await tileRes.blob();
+    const imageBitmap = await createImageBitmap(tileBlob);
+    const texture = new Texture(imageBitmap);
+    texture.needsUpdate = true;
+    return texture;
+  }
+});
+```
+When using a `customTileTextureLoader`, the returned tile Texture is then added to a cache that contains eviction.
+
 #### Tile encoding
 The raster encoding used for `MultiChannelSeriesTiledLayer`, as briefly mentioned above, is leveraging up to 3 color channels to provide high precision data visualization (or visualization of high precision data, as you prefer). If you are familiar with Mapbox's [Terrain-RGB](https://docs.mapbox.com/data/tilesets/reference/mapbox-terrain-rgb-v1/), then it's very close in practice!
 

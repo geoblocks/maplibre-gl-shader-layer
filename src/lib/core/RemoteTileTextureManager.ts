@@ -18,10 +18,17 @@ export class RemoteTileTextureManager extends TileTextureManager {
    * If a texture already failed to be retrieved, it is not trying again.
    */
   getTextureFromUrlPattern(tileIndex: TileIndex, textureUrlPattern: string): Promise<Texture> {
-    const texturemaker = (tileIndex: TileIndex, tileId: string): Promise<Texture> => {
-      return new Promise<Texture>((resolve, reject) => {
-        const tileIndexWrapped = wrapTileIndex(tileIndex);
+    const tileIndexWrapped = wrapTileIndex(tileIndex);
 
+    // In this case, the textureURL plays the role of unique tile ID
+    // (passed to super.getTexture() below)
+    const textureURL = textureUrlPattern
+      .replace("{x}", tileIndexWrapped.x.toString())
+      .replace("{y}", tileIndexWrapped.y.toString())
+      .replace("{z}", tileIndexWrapped.z.toString());
+
+    const texturemaker = (_tileIndex: TileIndex, tileId: string): Promise<Texture> => {
+      return new Promise<Texture>((resolve, reject) => {
         // The texture is not existing. An unfruitful attempt was made already
         if (this.unavailableTextures.has(tileId)) {
           return reject(new Error("Could not load texture."));
@@ -32,11 +39,6 @@ export class RemoteTileTextureManager extends TileTextureManager {
           resolve(this.textureInProgress.get(tileId) as Texture);
           return;
         }
-
-        const textureURL = textureUrlPattern
-          .replace("{x}", tileIndexWrapped.x.toString())
-          .replace("{y}", tileIndexWrapped.y.toString())
-          .replace("{z}", tileIndexWrapped.z.toString());
 
         const texInProgress = this.textureLoader.load(
           textureURL,
@@ -54,9 +56,7 @@ export class RemoteTileTextureManager extends TileTextureManager {
           // onError callback
           (_err) => {
             this.unavailableTextures.add(tileId);
-
             this.textureInProgress.delete(tileId);
-
             reject(new Error("Could not load texture."));
           },
         );
@@ -64,6 +64,6 @@ export class RemoteTileTextureManager extends TileTextureManager {
       });
     };
 
-    return super.getTexture(tileIndex, texturemaker);
+    return super.getTexture(tileIndex, texturemaker, textureURL);
   }
 }

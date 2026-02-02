@@ -1,6 +1,6 @@
 {
   "name": "maplibre-gl-shader-layer",
-  "private": true,
+  "private": false,
   "version": "1.0.0",
   "type": "module",
   "exports": {
@@ -9,6 +9,12 @@
       "types": "./dist-lib/maplibre-gl-shader-layer.d.ts"
     }
   },
+  "keywords": [
+    "maplibre",
+    "webgl",
+    "custom-layer",
+    "dataviz"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

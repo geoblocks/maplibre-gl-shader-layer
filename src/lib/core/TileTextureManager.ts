@@ -9,14 +9,14 @@ export type TileTextureManagerOptions = {
 /**
  * Type of asny function that input atile index and output a ThreeJS texture
  */
-export type TextureMaker = (tileIndex: TileIndex, tileId: string) => Promise<Texture>;
+export type TextureMaker = (tileIndex: TileIndex, tileId: string) => Promise<Texture | null>;
 
 export class TileTextureManager {
   protected readonly texturePool: QuickLRU<string, Texture>;
   protected readonly unavailableTextures = new Set();
 
   constructor(options: TileTextureManagerOptions = {}) {
-    const cacheSize = options.cacheSize ?? 10000;
+    const cacheSize = options.cacheSize ?? 5000;
 
     this.texturePool = new QuickLRU<string, Texture>({
       // should be replaced by gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
@@ -24,6 +24,9 @@ export class TileTextureManager {
 
       onEviction(_key: string, value: Texture) {
         console.log("Freeing texture from GPU memory");
+        if (value.source.data instanceof ImageBitmap) {
+          value.source.data.close();
+        }
         value.dispose();
       },
     });
@@ -33,11 +36,15 @@ export class TileTextureManager {
    * Get a texture from its z/x/y index and a TextureMaker function
    * If a tile is already in the cache, it will be retrieved from the cache.
    * If a texture already failed to be retrieved, it is not trying again.
+   *
+   * If necessary, a tileId can be passed to uniquely identify the given tile.
+   * If not provided, an id will ne formed using the {zxy}, but that's not always the
+   * best as multiple tiles will have the same {zxy} but eg. at different timestamp.
    */
-  getTexture(tileIndex: TileIndex, textureMaker: TextureMaker): Promise<Texture> {
+  getTexture(tileIndex: TileIndex, textureMaker: TextureMaker, providedTileId?: string): Promise<Texture> {
     return new Promise((resolve, reject) => {
       const tileIndexWrapped = wrapTileIndex(tileIndex);
-      const tileId = tileIndexToString(tileIndexWrapped);
+      const tileId = providedTileId ?? tileIndexToString(tileIndexWrapped);
 
       // The texture is not existing. An unfruitful attempt was made already
       if (this.unavailableTextures.has(tileId)) {
@@ -51,7 +58,7 @@ export class TileTextureManager {
       }
 
       textureMaker(tileIndex, tileId)
-        .then((texture: Texture) => {
+        .then((texture: Texture | null) => {
           if (!texture) {
             reject(new Error("Could not load texture."));
             return;

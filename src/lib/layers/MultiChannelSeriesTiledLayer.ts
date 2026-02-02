@@ -2,7 +2,7 @@
  * This is a demo of how to extend ShaderTiledLayer
  * TextureTiledLayer is a layer that simply contains a texture per tile
  */
-import type { RawShaderMaterial, ShaderMaterialParameters } from "three";
+import type { RawShaderMaterial, ShaderMaterialParameters, Texture } from "three";
 import { BaseShaderTiledLayer } from "../core/BaseShaderTiledLayer";
 import { clamp, pickImg, wgs84ToTileIndex, type TileIndex } from "../core/tools";
 // @ts-ignore
@@ -147,6 +147,8 @@ export type MultiChannelSeriesTiledLayerSpecification = {
   series: SeriesElement[];
 };
 
+export type CustomSeriesTileTextureLoader = (tileIndex: TileIndex, seriesAxisValue: number) => Promise<Texture | null>;
+
 export type MultiChannelSeriesTiledLayerOptions = {
   datasetSpecification: MultiChannelSeriesTiledLayerSpecification;
   colormap: Colormap;
@@ -175,6 +177,12 @@ export type MultiChannelSeriesTiledLayerOptions = {
    * If not provided, a default one will be added internaly to this layer.
    */
   remoteTileTextureManager?: RemoteTileTextureManager;
+
+  /**
+   * Optionnaly, a custom tile texture loader can be provided if tile textures are not directly
+   * stored remotely as single files, require credentials, etc.
+   */
+  customTileTextureLoader?: CustomSeriesTileTextureLoader;
 };
 
 export class MultiChannelSeriesTiledLayer extends BaseShaderTiledLayer {
@@ -188,12 +196,17 @@ export class MultiChannelSeriesTiledLayer extends BaseShaderTiledLayer {
   private readonly tileUrlPrefix: string;
   private readonly colormapGradient;
   private readonly remoteTileTextureManager: RemoteTileTextureManager;
+  private readonly customTileTextureLoader: CustomSeriesTileTextureLoader | null = null;
 
   constructor(id: string, options: MultiChannelSeriesTiledLayerOptions) {
     super(id, {
       minZoom: options.datasetSpecification.minZoom,
       maxZoom: options.datasetSpecification.maxZoom,
     });
+
+    if (options.customTileTextureLoader) {
+      this.customTileTextureLoader = options.customTileTextureLoader;
+    }
 
     this.colormapGradient = options.colormapGradient ?? true;
     this.tileUrlPrefix = options.tileUrlPrefix ?? "";
@@ -238,14 +251,8 @@ export class MultiChannelSeriesTiledLayer extends BaseShaderTiledLayer {
     // and needs to skip/jump further.
 
     const texBeforeAfter = await Promise.allSettled([
-      this.remoteTileTextureManager.getTexture(
-        tileIndex,
-        `${this.tileUrlPrefix}${this.seriesElementBefore.tileUrlPattern}`,
-      ),
-      this.remoteTileTextureManager.getTexture(
-        tileIndex,
-        `${this.tileUrlPrefix}${this.seriesElementAfter.tileUrlPattern}`,
-      ),
+      this.dualTextureFetcher(tileIndex, this.seriesElementBefore),
+      this.dualTextureFetcher(tileIndex, this.seriesElementAfter),
     ]);
 
     material.uniforms.u_texBefore.value = texBeforeAfter[0].status === "fulfilled" ? texBeforeAfter[0].value : null;
@@ -353,9 +360,7 @@ export class MultiChannelSeriesTiledLayer extends BaseShaderTiledLayer {
 
       for (const tileIndex of tileIndices) {
         counter++;
-        fetchingPromiseList.push(
-          this.remoteTileTextureManager.getTexture(tileIndex, `${this.tileUrlPrefix}${series[i].tileUrlPattern}`),
-        );
+        fetchingPromiseList.push(this.dualTextureFetcher(tileIndex, series[i]));
       }
     }
 
@@ -379,14 +384,8 @@ export class MultiChannelSeriesTiledLayer extends BaseShaderTiledLayer {
     } as TileIndex;
 
     const texturesBeforeAfter = await Promise.allSettled([
-      await this.remoteTileTextureManager.getTexture(
-        tileIndexStrict,
-        `${this.tileUrlPrefix}${this.seriesElementBefore.tileUrlPattern}`,
-      ),
-      await this.remoteTileTextureManager.getTexture(
-        tileIndexStrict,
-        `${this.tileUrlPrefix}${this.seriesElementAfter.tileUrlPattern}`,
-      ),
+      this.dualTextureFetcher(tileIndexStrict, this.seriesElementBefore),
+      this.dualTextureFetcher(tileIndexStrict, this.seriesElementAfter),
     ]);
 
     if (texturesBeforeAfter[0].status === "rejected" || texturesBeforeAfter[1].status === "rejected") {
@@ -462,5 +461,23 @@ export class MultiChannelSeriesTiledLayer extends BaseShaderTiledLayer {
       value: realWorldValue,
       unit: this.datasetSpecification.pixelUnit,
     };
+  }
+
+  private dualTextureFetcher(tileIndex: TileIndex, seriesElement: SeriesElement): Promise<Texture> {
+    // Use the custom loader (provided as option)
+    const customTileTextureLoader = this.customTileTextureLoader;
+    if (customTileTextureLoader) {
+      const seriesTileId = `${seriesElement.seriesAxisValue.toString()}_${tileIndex.z}_${tileIndex.x}_${tileIndex.y}`;
+      const textureMaker = (tileIndex: TileIndex, _tileId: string) => {
+        return customTileTextureLoader(tileIndex, seriesElement.seriesAxisValue);
+      };
+      return this.remoteTileTextureManager.getTexture(tileIndex, textureMaker, seriesTileId);
+    }
+
+    // use the regular tile URL loader
+    return this.remoteTileTextureManager.getTextureFromUrlPattern(
+      tileIndex,
+      `${this.tileUrlPrefix}${seriesElement.tileUrlPattern}`,
+    );
   }
 }
