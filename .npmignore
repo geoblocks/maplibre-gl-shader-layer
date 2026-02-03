@@ -3,3 +3,5 @@ public
 index.html
 biome.json
 .github
+dist
+resources
