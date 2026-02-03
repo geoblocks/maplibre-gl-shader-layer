@@ -1,4 +1,4 @@
-import { Texture, Vector2, type RawShaderMaterial, type ShaderMaterialParameters } from "three";
+import { type Texture, Vector2, type RawShaderMaterial, type ShaderMaterialParameters } from "three";
 import { BaseShaderTiledLayer, type BaseShaderTiledLayerOptions } from "../core/BaseShaderTiledLayer";
 
 // @ts-ignore
@@ -7,9 +7,9 @@ import type { TileIndex } from "../core/tools";
 import { Colormap } from "../core/Colormap";
 
 export type DistanceTiledLayerOptions = Omit<BaseShaderTiledLayerOptions, "tileZoomFitting"> & {
-  colormap?: Colormap,
-  referencePosition?: {lng: number, lat: number},
-}
+  colormap?: Colormap;
+  referencePosition?: { lng: number; lat: number };
+};
 
 export class DistanceTiledLayer extends BaseShaderTiledLayer {
   private colormap: Colormap;
@@ -19,23 +19,25 @@ export class DistanceTiledLayer extends BaseShaderTiledLayer {
   constructor(id: string, options: DistanceTiledLayerOptions = {}) {
     super(id, options);
 
-    this.colormap = options.colormap ?? Colormap.fromColormapDescription([
-      0,
-      "rgba(9, 14, 31, 0.0)",
-      100,
-      "rgba(9, 14, 31, 0.0)",
-      101,
-      "rgba(9, 14, 31, 0.6)",
-      200,
-      "rgba(9, 14, 31, 0.6)",
-    ]);
+    this.colormap =
+      options.colormap ??
+      Colormap.fromColormapDescription([
+        0,
+        "rgba(9, 14, 31, 0.0)",
+        100,
+        "rgba(9, 14, 31, 0.0)",
+        101,
+        "rgba(9, 14, 31, 0.6)",
+        200,
+        "rgba(9, 14, 31, 0.6)",
+      ]);
 
     this.referencePosition = new Vector2(0, 0);
     if (options.referencePosition !== undefined) {
       this.referencePosition.set(options.referencePosition.lng, options.referencePosition.lat);
     }
 
-    this.colormapTexture = this.colormap.getTexture({size: 4096});
+    this.colormapTexture = this.colormap.getTexture({ size: 4096 });
   }
 
   // Must be implemented.
@@ -67,7 +69,7 @@ export class DistanceTiledLayer extends BaseShaderTiledLayer {
     }
   }
 
-  setRefeferenceLocation(position: {lng: number, lat: number}) {
+  setRefeferenceLocation(position: { lng: number; lat: number }) {
     this.referencePosition.set(position.lng, position.lat);
 
     if (this.map) {
@@ -82,8 +84,8 @@ export class DistanceTiledLayer extends BaseShaderTiledLayer {
     // as colormap attribute, meaning calling .getTexture() will again re-generate
     // a texture from scratch. For this reason, it is better to store the texture seprarately
     // rather than regenerating it for evey tile as part of the onTileUpdate() hook.
-    this.colormapTexture = this.colormap.getTexture({size: 4096});
-    
+    this.colormapTexture = this.colormap.getTexture({ size: 4096 });
+
     if (this.map) {
       this.map.triggerRepaint();
     }

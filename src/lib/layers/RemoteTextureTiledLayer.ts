@@ -6,9 +6,9 @@
 import type { RawShaderMaterial, ShaderMaterialParameters } from "three";
 import { BaseShaderTiledLayer } from "../core/BaseShaderTiledLayer";
 import type { TileIndex } from "../core/tools";
-import { RemoteTileTextureManager } from "../core/RemoteTileTextureManager";
 // @ts-ignore
 import fragmentShader from "../shaders/texture-tile.f.glsl?raw";
+import { RemoteTileTextureManager } from "../core/RemoteTileTextureManager";
 
 export type RemoteTextureTiledLayerOptions = {
   minZoom?: number;
@@ -48,6 +48,9 @@ export class RemoteTextureTiledLayer extends BaseShaderTiledLayer {
 
   // Must be implemented
   async onTileUpdate(tileIndex: TileIndex, material: RawShaderMaterial) {
-    material.uniforms.u_tex.value = await this.remoteTileTextureManager.getTexture(tileIndex, this.textureUrlPattern);
+    material.uniforms.u_tex.value = await this.remoteTileTextureManager.getTextureFromUrlPattern(
+      tileIndex,
+      this.textureUrlPattern,
+    );
   }
 }

@@ -1,4 +1,4 @@
-import maplibregl, { MapMouseEvent } from "maplibre-gl";
+import maplibregl, { type MapMouseEvent } from "maplibre-gl";
 import { getStyle } from "basemapkit";
 import { Protocol } from "pmtiles";
 import { glyphs, lang, pmtiles, sprite } from "./constant";
@@ -18,7 +18,7 @@ function createDistanceColormap(distanceKm: number): Colormap {
 }
 
 function sliderValueToRadius(sliderVal: string): number {
-  return Math.max(0.1, (Number.parseFloat(sliderVal) ** 2) * 3000);
+  return Math.max(0.1, Number.parseFloat(sliderVal) ** 2 * 3000);
 }
 
 export async function distanceDemo(globe: boolean) {
@@ -54,7 +54,7 @@ export async function distanceDemo(globe: boolean) {
     globe,
   });
 
-  const center = {lng: 27.35, lat: 38.92};
+  const center = { lng: 27.35, lat: 38.92 };
 
   const map = new maplibregl.Map({
     container,
@@ -68,12 +68,16 @@ export async function distanceDemo(globe: boolean) {
   await new Promise((resolve) => map.on("load", resolve));
 
   const radius = sliderValueToRadius(opacitySlider.value);
-  const layer = new DistanceTiledLayer("distance-layer", {referencePosition: center, colormap: createDistanceColormap(radius) });
+  const layer = new DistanceTiledLayer("distance-layer", {
+    referencePosition: center,
+    colormap: createDistanceColormap(radius),
+  });
   map.addLayer(layer);
 
   opacitySlider.addEventListener("input", () => {
-    const radius = sliderValueToRadius(opacitySlider.value);createDistanceColormap(parseFloat(opacitySlider.value))
-    layer.setColormap( createDistanceColormap(radius) );
+    const radius = sliderValueToRadius(opacitySlider.value);
+    createDistanceColormap(Number.parseFloat(opacitySlider.value));
+    layer.setColormap(createDistanceColormap(radius));
   });
 
   map.on("mousemove", async (e: MapMouseEvent) => {

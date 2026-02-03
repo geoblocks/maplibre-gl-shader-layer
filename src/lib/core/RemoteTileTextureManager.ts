@@ -1,29 +1,15 @@
-import QuickLRU from "quick-lru";
 import { type Texture, TextureLoader } from "three";
 import { type TileIndex, wrapTileIndex } from "../core/tools";
+import { TileTextureManager, type TileTextureManagerOptions } from "./TileTextureManager";
 
-export type RemoteTextureManagerOptions = {
-  cacheSize?: number;
-};
+export type RemoteTextureManagerOptions = TileTextureManagerOptions;
 
-export class RemoteTileTextureManager {
-  private readonly texturePool: QuickLRU<string, Texture>;
-  private readonly unavailableTextures = new Set();
-  private readonly textureLoader = new TextureLoader();
-  private readonly textureInProgress = new Map<string, Texture>();
+export class RemoteTileTextureManager extends TileTextureManager {
+  protected readonly textureLoader = new TextureLoader();
+  protected readonly textureInProgress = new Map<string, Texture>();
 
   constructor(options: RemoteTextureManagerOptions = {}) {
-    const cacheSize = options.cacheSize ?? 10000;
-
-    this.texturePool = new QuickLRU<string, Texture>({
-      // should be replaced by gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
-      maxSize: cacheSize,
-
-      onEviction(_key: string, value: Texture) {
-        console.log("Freeing texture from GPU memory");
-        value.dispose();
-      },
-    });
+    super(options);
   }
 
   /**
@@ -31,63 +17,53 @@ export class RemoteTileTextureManager {
    * If a tile is already in the cache, it will be retrieved from the cache.
    * If a texture already failed to be retrieved, it is not trying again.
    */
-  getTexture(tileIndex: TileIndex, textureUrlPattern: string): Promise<Texture> {
-    return new Promise((resolve, reject) => {
-      const tileIndexWrapped = wrapTileIndex(tileIndex);
-      const textureURL = textureUrlPattern
-        .replace("{x}", tileIndexWrapped.x.toString())
-        .replace("{y}", tileIndexWrapped.y.toString())
-        .replace("{z}", tileIndexWrapped.z.toString());
+  getTextureFromUrlPattern(tileIndex: TileIndex, textureUrlPattern: string): Promise<Texture> {
+    const tileIndexWrapped = wrapTileIndex(tileIndex);
 
-      // The texture is not existing. An unfruitful attempt was made already
-      if (this.unavailableTextures.has(textureURL)) {
-        return reject(new Error("Could not load texture."));
-      }
+    // In this case, the textureURL plays the role of unique tile ID
+    // (passed to super.getTexture() below)
+    const textureURL = textureUrlPattern
+      .replace("{x}", tileIndexWrapped.x.toString())
+      .replace("{y}", tileIndexWrapped.y.toString())
+      .replace("{z}", tileIndexWrapped.z.toString());
 
-      // The texture is in the pool of already fetched textures
-      if (this.texturePool.has(textureURL)) {
-        resolve(this.texturePool.get(textureURL) as Texture);
-        return;
-      }
+    const texturemaker = (_tileIndex: TileIndex, tileId: string): Promise<Texture> => {
+      return new Promise<Texture>((resolve, reject) => {
+        // The texture is not existing. An unfruitful attempt was made already
+        if (this.unavailableTextures.has(tileId)) {
+          return reject(new Error("Could not load texture."));
+        }
 
-      // A request of this texture has already been made but is not finished yet
-      if (this.textureInProgress.has(textureURL)) {
-        resolve(this.textureInProgress.get(textureURL) as Texture);
-        return;
-      }
+        // A request of this texture has already been made but is not finished yet
+        if (this.textureInProgress.has(tileId)) {
+          resolve(this.textureInProgress.get(tileId) as Texture);
+          return;
+        }
 
-      const tempTexture = this.textureLoader.load(
-        textureURL,
+        const texInProgress = this.textureLoader.load(
+          textureURL,
 
-        (texture) => {
-          texture.flipY = false;
-          this.texturePool.set(textureURL, texture);
-          this.textureInProgress.delete(textureURL);
-          resolve(texture);
-        },
+          (texture) => {
+            texture.flipY = false;
+            this.texturePool.set(tileId, texture);
+            this.textureInProgress.delete(tileId);
+            resolve(texture);
+          },
 
-        // onProgress callback currently not supported
-        undefined,
+          // onProgress callback currently not supported
+          undefined,
 
-        // onError callback
-        (_err) => {
-          this.unavailableTextures.add(textureURL);
+          // onError callback
+          (_err) => {
+            this.unavailableTextures.add(tileId);
+            this.textureInProgress.delete(tileId);
+            reject(new Error("Could not load texture."));
+          },
+        );
+        this.textureInProgress.set(tileId, texInProgress);
+      });
+    };
 
-          this.textureInProgress.delete(textureURL);
-
-          reject(new Error("Could not load texture."));
-        },
-      );
-
-      this.textureInProgress.set(textureURL, tempTexture);
-    });
-  }
-
-  /**
-   * Clear the texture cache
-   */
-  clear() {
-    this.texturePool.clear();
-    this.unavailableTextures.clear();
+    return super.getTexture(tileIndex, texturemaker, textureURL);
   }
 }

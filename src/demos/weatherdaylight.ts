@@ -144,7 +144,6 @@ export async function weatherDaylightDemo(weatherVariableId: WeatherVariableId) 
       }
     } catch (err) {
       console.log(err);
-
       pickindDisplay.innerText = "-";
     }
   });

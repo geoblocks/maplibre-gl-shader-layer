@@ -17,7 +17,7 @@ const demos = {
     dummyDemo(false);
   },
 
-  "distance": () => {
+  distance: () => {
     distanceDemo(true);
   },
 
