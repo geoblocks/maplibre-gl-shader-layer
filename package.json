@@ -1,13 +1,20 @@
 {
   "name": "maplibre-gl-shader-layer",
   "private": false,
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
   "exports": {
     ".": {
       "import": "./dist-lib/maplibre-gl-shader-layer.js",
       "types": "./dist-lib/maplibre-gl-shader-layer.d.ts"
     }
+  },
+  "author": "Jonathan Lurie",
+  "homepage": "https://github.com/geoblocks/maplibre-gl-shader-layer",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/geoblocks/maplibre-gl-shader-layer.git"
   },
   "keywords": [
     "maplibre",

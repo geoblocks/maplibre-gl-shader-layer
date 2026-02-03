@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+
+jobs:
+  check-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Installing dependencies
+        run: npm ci
+
+      - name: Biome format and lint (no fix)
+        run: npm run biome
+
+      - name: Building library
+        run: npm run build:lib
