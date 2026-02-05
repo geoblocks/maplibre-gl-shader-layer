@@ -110,7 +110,7 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
   protected altitude = 0;
   protected isVisible = true;
   protected readonly defaultVertexShader = defaultVertexShader;
-  private hasRenderedOnce = false;
+  protected renderCallCounter = 0;
 
   constructor(id: string, options: BaseShaderTiledLayerOptions = {}) {
     this.id = id;
@@ -138,7 +138,7 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
   /**
    * Method to update the material of a tile Mesh before a tile is rendered
    */
-  protected abstract onTileUpdate(tileIndex: TileIndex, material: RawShaderMaterial): void | Promise<void>;
+  protected abstract onTileUpdate(tileIndex: TileIndex, material: RawShaderMaterial): Promise<void>;
 
   setVisible(v: boolean) {
     this.isVisible = v;
@@ -223,9 +223,13 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
   }
 
   render(_gl: WebGLRenderingContext | WebGL2RenderingContext, options: maplibregl.CustomRenderMethodInput) {
+    // console.log("render");
+    
     if (!this.isVisible) {
       return;
     }
+
+    this.renderCallCounter ++;
 
     this.shouldShowCurrent = this.shouldShow();
 
@@ -248,7 +252,7 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
     // From z14+ the tile positioning is computed as relative to the center of the map
     const relativeTilePosition = zoom >= 14;
 
-    const promises = [];
+    const tileUpdatePromises = [];
 
     const updatePositioningMethod = (tile: Tile, tileIndex: TileIndex) => {
       if (relativeTilePosition) {
@@ -268,7 +272,7 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
     };
 
     this.camera.matrixWorldAutoUpdate = false;
-    const sceneOriginMercator = maplibregl.MercatorCoordinate.fromLngLat(this.map.getCenter(), 0);
+    const sceneOriginMercator = maplibregl.MercatorCoordinate.fromLngLat(this.map.getCenter(), 0);    
 
     for (const element of allTileIndices) {
       const tileIndex = element;
@@ -285,14 +289,14 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
         usedTileMapPrevious.delete(tileID);
         this.scene.add(tile);
 
-        promises.push(this.updateTileMaterial(tile, zoom, isGlobe, relativeTilePosition));
+        tileUpdatePromises.push(this.updateTileMaterial(tile, zoom, isGlobe, relativeTilePosition));
       } else {
         // This tile is not in the pool
         tilesToAdd.push(tileIndex);
       }
     }
 
-    this.unusedTileList.push(...Array.from(usedTileMapPrevious.values()));
+    this.unusedTileList.push(...Array.from(usedTileMapPrevious.values()));    
 
     for (const element of tilesToAdd) {
       const tileIndex = element;
@@ -338,7 +342,7 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
       usedTileMapNew.set(tileID, tile);
       tile.setTileIndex(tileIndex);
       this.scene.add(tile);
-      promises.push(this.updateTileMaterial(tile, zoom, isGlobe, relativeTilePosition));
+      tileUpdatePromises.push(this.updateTileMaterial(tile, zoom, isGlobe, relativeTilePosition));
     }
 
     this.usedTileMap = usedTileMapNew;
@@ -359,12 +363,15 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
       this.renderer.render(this.scene, this.camera);
     }
 
-    // Ensure a refresh after all the material updates.
-    // This is to make sure that tiles loaded async will update
-    Promise.allSettled(promises).then(() => {
-      if (!this.hasRenderedOnce) {
+    const localRenderCallCounter = this.renderCallCounter;
+    Promise.allSettled(tileUpdatePromises).then(() => {
+      // It may happen that some tileUpdatePromises ar only resolved
+      // on a render call that happens much later. This is especially
+      // true when these contain remote file loading. We track these
+      // async event so that a re-render can be done
+      if (localRenderCallCounter !== this.renderCallCounter) {
+        console.log(localRenderCallCounter, this.renderCallCounter);
         this.map.triggerRepaint();
-        this.hasRenderedOnce = true;
       }
     });
   }
@@ -382,6 +389,7 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
     tileRawMaterial.uniforms.u_altitude.value = this.altitude;
     tileRawMaterial.uniforms.u_relativeTilePosition.value = relativeTilePosition;
   }
+
 
   setOpacity(opacity: number) {
     this.opacity = Math.max(0, Math.min(opacity, 1));
