@@ -101,7 +101,7 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
   protected showBelowMinZoom: boolean;
   protected showBeyondMaxZoom: boolean;
   protected shouldShowCurrent!: boolean;
-  protected usedTileMap = new Map<string, Tile>();
+  protected currentlyUsedTiles = new Map<string, Tile>();
   protected readonly tilePool: QuickLRU<string, Tile>;
   protected unusedTileList: Array<Tile> = [];
   private readonly tileZoomFittingFunction: (v: number) => number = Math.floor;
@@ -131,7 +131,6 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
     this.tilePool = new QuickLRU<string, Tile>({
       maxSize: 300,
       onEviction(_key: string, tile: Tile) {
-        console.log("Flushing a tile");
         tile.geometry.dispose();
         const material = tile.material;
         if (Array.isArray(material)) {
@@ -235,8 +234,6 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
   }
 
   render(_gl: WebGLRenderingContext | WebGL2RenderingContext, options: maplibregl.CustomRenderMethodInput) {
-    // console.log("render");
-
     if (!this.isVisible) {
       return;
     }
@@ -252,8 +249,6 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
     // this.tileContainer.clear();
     this.scene.clear();
     const allTileIndices = this.listTilesIndicesForMapBounds();
-    const usedTileMapNew = new Map<string, Tile>();
-
     const mapProjection = this.map.getProjection();
     const zoom = this.map.getZoom();
     // At z12+, the globe is no longer globe in Maplibre
@@ -281,6 +276,8 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
         tile.rotation.set(0, 0, 0);
       }
     };
+
+    this.currentlyUsedTiles.clear();
 
     for (const tileIndex of allTileIndices) {
       const tileID = `${tileIndex.z}_${tileIndex.x}_${tileIndex.y}`;
@@ -321,10 +318,10 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
       updatePositioningMethod(tile, tileIndex);
       tile.setTileIndex(tileIndex);
       this.scene.add(tile);
+      this.currentlyUsedTiles.set(tileID, tile);
       tileUpdatePromises.push(this.updateTileMaterial(tile, zoom, isGlobe, relativeTilePosition));
     }
 
-    this.usedTileMap = usedTileMapNew;
     this.renderScene(relativeTilePosition, sceneOriginMercator, projectionMatrix);
 
     const localRenderCallCounter = this.renderCallCounter;
@@ -392,5 +389,26 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
     if (this.map) {
       this.map.triggerRepaint();
     }
+  }
+
+  /**
+   * Get the tile currently in use, as an array
+   */
+  getCurrentlyUsedTiles() {
+    return Array.from(this.currentlyUsedTiles.values());
+  }
+
+  /**
+   * Get the indices of the tile in use, as an array
+   */
+  getCurrentlyUsedTileIndices() {
+    return this.getCurrentlyUsedTiles().map((t) => t.getTileIndex());
+  }
+
+  /**
+   * Get the zoom level of the tiles in use
+   */
+  getCurrentlyUsedTileZoom() {
+    return this.getCurrentlyUsedTileIndices()[0].z;
   }
 }
