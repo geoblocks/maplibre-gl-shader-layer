@@ -346,7 +346,7 @@ export function pickImg(img: HTMLImageElement, unitPosition: [number, number]): 
 /**
  * Returns true is two matrices are equal
  */
-export function matricesEqual(a: number[], b: number[], tolerance = 1e-6): boolean {  
+export function matricesEqual(a: number[], b: number[], tolerance = 1e-6): boolean {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
     if (Math.abs(a[i] - b[i]) > tolerance) return false;

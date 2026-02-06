@@ -118,6 +118,7 @@ export async function canvasTextureDemo() {
   });
 
   map.addLayer(layer);
+  map.showTileBoundaries = true;
 
   opacitySlider.addEventListener("input", () => {
     layer.setOpacity(1 - Number.parseFloat(opacitySlider.value));
