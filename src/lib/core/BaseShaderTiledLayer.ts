@@ -18,6 +18,7 @@ import {
   isTileInViewport,
   wrapTileIndex,
   tileIndexToMercatorCenterAndSize,
+  wgs84ToTileIndex,
 } from "./tools";
 import { Tile } from "./Tile";
 
@@ -214,6 +215,18 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
 
       tileIndicesCandidates = Array.from(tileMap.values());
     }
+
+    // wgs84ToTileIndex
+    // console.log("tileIndicesCandidates", tileIndicesCandidates);
+    
+    // Sorting tiles from the distance to center so have a more user-centric tile
+    // display order
+    const c = wgs84ToTileIndex(this.map.getCenter(), z, false);
+    tileIndicesCandidates.sort((a, b) => {
+      const cToA = Math.sqrt(((a.x + 0.5) - c.x) ** 2 + ((a.y + 0.5) - c.y) ** 2);
+      const bToA = Math.sqrt(((b.x + 0.5) - c.x) ** 2 + ((b.y + 0.5) - c.y) ** 2);
+      return cToA - bToA;
+    })
 
     if (this.map.getZoom() >= z) {
       return tileIndicesCandidates;
