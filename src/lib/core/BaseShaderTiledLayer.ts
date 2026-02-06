@@ -19,6 +19,7 @@ import {
   wrapTileIndex,
   tileIndexToMercatorCenterAndSize,
   wgs84ToTileIndex,
+  matricesEqual,
 } from "./tools";
 import { Tile } from "./Tile";
 
@@ -111,6 +112,8 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
   protected isVisible = true;
   protected readonly defaultVertexShader = defaultVertexShader;
   protected renderCallCounter = 0;
+  private lastRenderProjectionMatrix: number[] = [];
+  private lastRenderTileIndicesForMapBounds: TileIndex[] = [];
 
   constructor(id: string, options: BaseShaderTiledLayerOptions = {}) {
     this.id = id;
@@ -195,7 +198,7 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
     this.renderer.autoClear = false;
   }
 
-  protected listTilesIndicesForMapBounds() {
+  protected listTilesIndicesForMapBounds() {        
     const mapProjection = this.map.getProjection();
     const zoom = this.map.getZoom();
     const isGlobe = mapProjection && mapProjection.type === "globe" && zoom < 12;
@@ -216,9 +219,6 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
       tileIndicesCandidates = Array.from(tileMap.values());
     }
 
-    // wgs84ToTileIndex
-    // console.log("tileIndicesCandidates", tileIndicesCandidates);
-    
     // Sorting tiles from the distance to center so have a more user-centric tile
     // display order
     const c = wgs84ToTileIndex(this.map.getCenter(), z, false);
@@ -251,17 +251,20 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
       return;
     }
 
-    const projectionMatrix = options.defaultProjectionData.mainMatrix as number[];
-    this.renderCallCounter++;
     this.shouldShowCurrent = this.shouldShow();
 
     // Escape if not rendering
-    if (!this.shouldShowCurrent) return;
+    if (!this.shouldShowCurrent) return;    
 
-    // Brute force flush the tile container (Object3D) and refill it with tiles from the pool
-    // this.tileContainer.clear();
+    const projectionMatrix = options.defaultProjectionData.mainMatrix as number[];
+    const hasMovedSinceLastRender = !matricesEqual(this.lastRenderProjectionMatrix, projectionMatrix, 1e-3);
+
+    this.lastRenderProjectionMatrix = projectionMatrix;
+    this.renderCallCounter++;
+
     this.scene.clear();
-    const allTileIndices = this.listTilesIndicesForMapBounds();
+    const tileIndicesForMapBounds = hasMovedSinceLastRender ? this.listTilesIndicesForMapBounds() : this.lastRenderTileIndicesForMapBounds;
+    this.lastRenderTileIndicesForMapBounds = tileIndicesForMapBounds;
     const mapProjection = this.map.getProjection();
     const zoom = this.map.getZoom();
     // At z12+, the globe is no longer globe in Maplibre
@@ -292,7 +295,7 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
 
     this.currentlyUsedTiles.clear();
 
-    for (const tileIndex of allTileIndices) {
+    for (const tileIndex of tileIndicesForMapBounds) {
       const tileID = `${tileIndex.z}_${tileIndex.x}_${tileIndex.y}`;
       let tile = this.tilePool.get(tileID);
 
@@ -325,11 +328,11 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
 
         const material = new RawShaderMaterial(shaderMaterialParameters);
         tile = new Tile(material);
+        tile.setTileIndex(tileIndex);
         this.tilePool.set(tileID, tile);
       }
 
       updatePositioningMethod(tile, tileIndex);
-      tile.setTileIndex(tileIndex);
       this.scene.add(tile);
       this.currentlyUsedTiles.set(tileID, tile);
       tileUpdatePromises.push(this.updateTileMaterial(tile, zoom, isGlobe, relativeTilePosition));

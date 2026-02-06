@@ -342,3 +342,14 @@ export function pickImg(img: HTMLImageElement, unitPosition: [number, number]): 
   ctx.drawImage(img, 0, 0);
   return ctx.getImageData(x, y, 1, 1).data;
 }
+
+/**
+ * Returns true is two matrices are equal
+ */
+export function matricesEqual(a: number[], b: number[], tolerance = 1e-6): boolean {  
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (Math.abs(a[i] - b[i]) > tolerance) return false;
+  }
+  return true;
+}
