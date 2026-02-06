@@ -16,7 +16,7 @@ export class TileTextureManager {
   protected readonly unavailableTextures = new Set();
 
   constructor(options: TileTextureManagerOptions = {}) {
-    const cacheSize = options.cacheSize ?? 5000;
+    const cacheSize = options.cacheSize ?? 1000;
 
     this.texturePool = new QuickLRU<string, Texture>({
       // should be replaced by gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);

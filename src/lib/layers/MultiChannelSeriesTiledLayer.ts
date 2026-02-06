@@ -345,7 +345,7 @@ export class MultiChannelSeriesTiledLayer extends BaseShaderTiledLayer {
    */
   async prefetchSeriesTexture(deltaBefore: number, deltaAfter: number) {
     // Tile indices {x, y, z} of the current tile coverage
-    const tileIndices = Array.from(this.usedTileMap.values()).map((tile) => tile.getTileIndex());
+    const tileIndices = this.getCurrentlyUsedTileIndices();
     const series = this.datasetSpecification.series;
     const fetchingPromiseList = [];
 
@@ -371,10 +371,8 @@ export class MultiChannelSeriesTiledLayer extends BaseShaderTiledLayer {
    * Get the value and unit at a given position, for the current series axis position.
    */
   async pick(lngLat: LngLat): Promise<{ value: number; unit: string | undefined } | null> {
-    const tileIndices = Array.from(this.usedTileMap.values()).map((tile) => tile.getTileIndex());
-
     // Getting zoom level of current displayed tiles
-    const z = tileIndices[0].z;
+    const z = this.getCurrentlyUsedTileZoom();
 
     const tileToPickUnstrict = wgs84ToTileIndex(lngLat, z, false);
     const tileIndexStrict = {

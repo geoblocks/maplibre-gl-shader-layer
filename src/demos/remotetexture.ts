@@ -50,6 +50,7 @@ export async function simpletextureDemo() {
     minZoom: 0,
     maxZoom: 4,
   });
+
   layer.setOpacity(Number.parseFloat(opacitySlider.value));
   map.addLayer(layer);
 
