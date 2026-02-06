@@ -60,16 +60,20 @@ const demos = {
     location.href = "?demo=temperature";
   }
 
-  const demoListContainer = document.getElementById("demo-list") as HTMLDivElement;
+  const demoDropdown = document.getElementById("demo-dropdown") as HTMLSelectElement;
 
   for (const demoName in demos) {
-    const demoLink = document.createElement("a") as HTMLAnchorElement;
-    demoLink.href = `?demo=${demoName}`;
-    demoLink.innerText = demoName;
-    demoListContainer.append(demoLink);
+    const demoSelectOption = document.createElement("option");
+    demoSelectOption.innerText = demoName;
+    demoSelectOption.value = demoName;
+    demoDropdown.append(demoSelectOption);
 
     if (demoNameParam === demoName) {
-      demoLink.classList.add("selected-demo");
+      demoDropdown.value = demoName;
     }
   }
+
+  demoDropdown.addEventListener("input", () => {
+    location.href = `?demo=${demoDropdown.value}`;
+  });
 })();

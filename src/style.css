@@ -100,3 +100,22 @@ body {
   color: #FFF;
   font-weight: 600;
 }
+
+
+#demo-dropdown {
+  z-index: 2;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  margin: auto;
+  margin-bottom: 30px;
+  width: fit-content;
+  font-size: 20px;
+  background: #ffffff;
+  padding: 4px;
+  border: none;
+  border-radius: 4px;
+  color: #2c7ade;
+  filter: drop-shadow(0px 0px 10px #002d66);
+}
