@@ -76,7 +76,7 @@ The class `BaseShaderTiledLayer` is the one to inherit from when creating a new 
 - instanciate a proper layer, following the Maplibre GL JS recommandations
 - hook the proper rendering functions to sync with Maplibre
 
-The class `BaseShaderTiledLayer` is designed to be extended and not to be used as is. The simplest example of an extension would be (DummyGradientTiledLayer)[src/lib/layers/DummyGradientTiledLayer.ts].
+The class `BaseShaderTiledLayer` is designed to be extended and not to be used as is. The simplest example of an extension would be [DummyGradientTiledLayer](src/lib/layers/DummyGradientTiledLayer.ts).
 
 Since all the layers, built-in or homemade, inherit from `BaseShaderTiledLayer`, they come with some methods:
 - `.setVisible(v: boolean)` : toggle the layer visibility. If made invisible, the layer is no longer rendered and all its internal necessary for rendering are no longer called.
@@ -85,7 +85,7 @@ Since all the layers, built-in or homemade, inherit from `BaseShaderTiledLayer`,
 
 
 ### `DummyGradientTiledLayer`
-The (DummyGradientTiledLayer)[src/lib/layers/DummyGradientTiledLayer.ts] is an example of how to extend `BaseShaderTiledLayer`. An actual demo can be found at [dummy.ts](src/demos/dummy.ts). 
+The [DummyGradientTiledLayer](src/lib/layers/DummyGradientTiledLayer.ts) is an example of how to extend `BaseShaderTiledLayer`. An actual demo can be found at [dummy.ts](src/demos/dummy.ts). 
 ![dummy-demo](resources/screenshots/dummy.png)  
 This demo is minimalist as it only 
 
