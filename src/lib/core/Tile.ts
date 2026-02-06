@@ -1,22 +1,17 @@
-import {
-  type BufferGeometry,
-  type Material,
-  Matrix4,
-  Mesh,
-  type NormalBufferAttributes,
-  Quaternion,
-  Vector3,
-} from "three";
+import { type Material, Matrix4, Mesh, PlaneGeometry, Quaternion, Vector3 } from "three";
 import type { TileIndex } from "./tools";
+
+let masterTileGeometry: PlaneGeometry | null = null;
+function getTileGeometry() {
+  masterTileGeometry ??= new PlaneGeometry(1, 1, 32, 32);
+  return masterTileGeometry.clone();
+}
 
 export class Tile extends Mesh {
   private readonly tileIndex: TileIndex = { z: 0, x: 0, y: 0 };
 
-  constructor(
-    geometry: BufferGeometry<NormalBufferAttributes> | undefined,
-    material: Material | Material[] | undefined,
-  ) {
-    super(geometry?.clone(), material);
+  constructor(material: Material | Material[] | undefined) {
+    super(getTileGeometry(), material);
     this.matrixAutoUpdate = true;
     this.matrixWorldAutoUpdate = true;
   }

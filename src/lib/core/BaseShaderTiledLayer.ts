@@ -3,7 +3,6 @@ import {
   Camera,
   Matrix4,
   type MeshBasicMaterial,
-  PlaneGeometry,
   RawShaderMaterial,
   Scene,
   WebGLRenderer,
@@ -24,6 +23,7 @@ import { Tile } from "./Tile";
 
 // @ts-ignore
 import defaultVertexShader from "../shaders/tile.v.glsl?raw";
+import QuickLRU from "quick-lru";
 
 /**
  * Tile stategy to change (integer) zoom level depending on ramping map zoom level.
@@ -96,14 +96,13 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
   protected camera!: Camera;
   protected scene!: Scene;
   protected debugMaterial!: MeshBasicMaterial;
-  protected tileGeometry!: PlaneGeometry;
   protected minZoom: number;
   protected maxZoom: number;
   protected showBelowMinZoom: boolean;
   protected showBeyondMaxZoom: boolean;
   protected shouldShowCurrent!: boolean;
-  protected tilePool: Tile[] = [];
   protected usedTileMap = new Map<string, Tile>();
+  protected readonly tilePool: QuickLRU<string, Tile>;
   protected unusedTileList: Array<Tile> = [];
   private readonly tileZoomFittingFunction: (v: number) => number = Math.floor;
   protected opacity = 1;
@@ -128,6 +127,21 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
         this.tileZoomFittingFunction = Math.round;
       }
     }
+
+    this.tilePool = new QuickLRU<string, Tile>({
+      maxSize: 300,
+      onEviction(_key: string, tile: Tile) {
+        console.log("Flushing a tile");
+        tile.geometry.dispose();
+        const material = tile.material;
+        if (Array.isArray(material)) {
+          material.forEach(el => el.dispose());
+        } else {
+          material.dispose()
+        }
+        
+      },
+    });
   }
 
   /**
@@ -150,7 +164,6 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
   protected initScene() {
     this.camera = new Camera();
     this.scene = new Scene();
-    this.tileGeometry = new PlaneGeometry(1, 1, 32, 32);
   }
 
   /**
@@ -240,8 +253,6 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
     // this.tileContainer.clear();
     this.scene.clear();
     const allTileIndices = this.listTilesIndicesForMapBounds();
-    const tilesToAdd = [];
-    const usedTileMapPrevious = this.usedTileMap;
     const usedTileMapNew = new Map<string, Tile>();
 
     const mapProjection = this.map.getProjection();
@@ -272,39 +283,11 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
       }
     };
 
-    for (const element of allTileIndices) {
-      const tileIndex = element;
+    for (const tileIndex of allTileIndices) {
       const tileID = `${tileIndex.z}_${tileIndex.x}_${tileIndex.y}`;
+      let tile = this.tilePool.get(tileID);
 
-      const tile = usedTileMapPrevious.get(tileID);
-      if (tile) {
-        updatePositioningMethod(tile, tileIndex);
-
-        // This tile is already in the pool
-        usedTileMapNew.set(tileID, tile);
-
-        // Removing it from the previous map so that only remains the unused ones
-        usedTileMapPrevious.delete(tileID);
-        this.scene.add(tile);
-
-        tileUpdatePromises.push(this.updateTileMaterial(tile, zoom, isGlobe, relativeTilePosition));
-      } else {
-        // This tile is not in the pool
-        tilesToAdd.push(tileIndex);
-      }
-    }
-
-    this.unusedTileList.push(...Array.from(usedTileMapPrevious.values()));
-
-    for (const element of tilesToAdd) {
-      const tileIndex = element;
-      const tileID = `${tileIndex.z}_${tileIndex.x}_${tileIndex.y}`;
-
-      let tile: Tile;
-
-      if (this.unusedTileList.length > 0) {
-        tile = this.unusedTileList.pop() as Tile;
-      } else {
+      if (!tile) {
         const mapProjection = this.map.getProjection();
         const providedShaderMaterialParameters: ShaderMaterialParameters = this.onSetTileShaderParameters(tileIndex);
         const shaderMaterialParameters: ShaderMaterialParameters = {
@@ -312,7 +295,6 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
           side: BackSide,
           transparent: true,
           depthTest: false,
-
           ...providedShaderMaterialParameters,
 
           // Mandatory params
@@ -333,11 +315,11 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
         };
 
         const material = new RawShaderMaterial(shaderMaterialParameters);
-        tile = new Tile(this.tileGeometry, material);
+        tile = new Tile(material);
+        this.tilePool.set(tileID, tile);
       }
 
       updatePositioningMethod(tile, tileIndex);
-      usedTileMapNew.set(tileID, tile);
       tile.setTileIndex(tileIndex);
       this.scene.add(tile);
       tileUpdatePromises.push(this.updateTileMaterial(tile, zoom, isGlobe, relativeTilePosition));
