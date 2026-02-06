@@ -45,17 +45,10 @@ export async function simpletextureDemo() {
 
   await new Promise((resolve) => map.on("load", resolve));
 
-  // const layer = new RemoteTextureTiledLayer("texture-layer", {
-  //   textureUrlPattern: "/demo-tilesets/wind_speed_10m/2025-11-03T12:00:00Z/{z}/{x}/{y}.webp",
-  //   minZoom: 0,
-  //   maxZoom: 4,
-  // });
-
   const layer = new RemoteTextureTiledLayer("texture-layer", {
-    textureUrlPattern:
-      "https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.jpg?access_token=pk.eyJ1Ijoiam9uYXRoYW5sdXJpZSIsImEiOiJyQ0ZEVnZVIn0.1AhMgc1ZIGhsc_HCSSgL-w",
+    textureUrlPattern: "/demo-tilesets/wind_speed_10m/2025-11-03T12:00:00Z/{z}/{x}/{y}.webp",
     minZoom: 0,
-    maxZoom: 20,
+    maxZoom: 4,
   });
 
   layer.setOpacity(Number.parseFloat(opacitySlider.value));

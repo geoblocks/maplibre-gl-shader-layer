@@ -135,11 +135,10 @@ export abstract class BaseShaderTiledLayer implements maplibregl.CustomLayerInte
         tile.geometry.dispose();
         const material = tile.material;
         if (Array.isArray(material)) {
-          material.forEach(el => el.dispose());
+          material.forEach((el) => el.dispose());
         } else {
-          material.dispose()
+          material.dispose();
         }
-        
       },
     });
   }
