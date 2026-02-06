@@ -259,7 +259,7 @@ export class MultiChannelSeriesTiledLayer extends BaseShaderTiledLayer {
     material.uniforms.u_texAfter.value = texBeforeAfter[1].status === "fulfilled" ? texBeforeAfter[1].value : null;
     material.uniforms.u_seriesAxisValueBefore.value = this.seriesElementBefore.seriesAxisValue;
     material.uniforms.u_seriesAxisValueAfter.value = this.seriesElementAfter.seriesAxisValue;
-    material.uniforms.u_seriesAxisValue.value = this.seriesAxisValue;    
+    material.uniforms.u_seriesAxisValue.value = this.seriesAxisValue;
   }
 
   /**
