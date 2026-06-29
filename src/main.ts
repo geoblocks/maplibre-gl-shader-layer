@@ -7,6 +7,7 @@ import { daylightDemo } from "./demos/daylight";
 import { simpletextureDemo } from "./demos/remotetexture";
 import { canvasTextureDemo } from "./demos/canvastexture";
 import { distanceDemo } from "./demos/distance";
+import { wgs84GlobalDemo } from "./demos/wgs84Global";
 
 const demos = {
   dummy: () => {
@@ -47,6 +48,10 @@ const demos = {
 
   "windspeed-day-night": () => {
     weatherDaylightDemo("wind_speed_10m");
+  },
+
+  "wgs84-global": () => {
+    wgs84GlobalDemo(true);
   },
 } as const;
 

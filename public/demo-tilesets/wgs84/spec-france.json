@@ -1,0 +1,12 @@
+{
+  "raster_width": 1121,
+  "raster_height": 717,
+  "dtype": "float32",
+  "geo_origin_lon": -12.0125,
+  "geo_origin_lat": 55.4125,
+  "pixel_size_degree": {
+    "lon": 0.024999999999999998,
+    "lat": -0.024999999999999998
+  },
+  "nodata_value": 9999.0
+}

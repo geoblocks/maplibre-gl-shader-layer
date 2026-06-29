@@ -1,0 +1,14 @@
+{
+  "width": 1441,
+  "height": 721,
+  "dtype": "float32",
+  "lonMin": -180.125,
+  "lonMax": 179.875,
+  "latMin": -90.125,
+  "latMax": 90.125,
+  "pixel_size_degree": {
+    "lon": 0.2498265093684941,
+    "lat": -0.25
+  },
+  "nodata_value": null
+}
