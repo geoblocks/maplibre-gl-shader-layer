@@ -3,10 +3,7 @@ import { getStyle, setLayerOpacity } from "basemapkit";
 import { Protocol } from "pmtiles";
 
 import { glyphs, lang, pmtiles, sprite } from "./constant";
-import {
-  RemoteWgs84TextureTiledLayer,
-  type RemoteWgs84TextureTiledLayerOptions,
-} from "../lib";
+import { FloatRaster, floatRasterToMultiChannelRaster, RemoteWgs84TextureTiledLayer, type RemoteWgs84TextureTiledLayerOptions } from "../lib";
 
 const demoConfig: Record<string, RemoteWgs84TextureTiledLayerOptions> = {
   "france-hi-magma": {
@@ -153,3 +150,65 @@ export async function wgs84ImageDemo(globe: boolean, demoName: keyof typeof demo
     layer.setOpacity(Number.parseFloat(opacitySlider.value));
   });
 }
+
+
+
+
+async function test01() {
+  const rasterMetadataUrl = "/demo-tilesets/wgs84-float/europe-TMP/spec.json"
+  const rawRasterUrl = "public/demo-tilesets/wgs84-float/europe-TMP/TMP_2026-06-26T00:00:00Z.raw"
+
+  const rasterMetadataResponse = await fetch(rasterMetadataUrl);
+  const rasterMetadata = await rasterMetadataResponse.json();
+
+  const width = rasterMetadata.raster_width;
+  const height = rasterMetadata.raster_height;
+  const nodataValue = rasterMetadata.nodata_value;
+  const dtype = rasterMetadata.dtype;
+
+  const geoBoundingBox = {
+    lonMin: rasterMetadata.geo_origin_lon,
+    lonMax: rasterMetadata.geo_origin_lon + rasterMetadata.pixel_size_degree.lon * width,
+    latMin: rasterMetadata.geo_origin_lat + rasterMetadata.pixel_size_degree.lat * height,
+    latMax: rasterMetadata.geo_origin_lat,
+  }
+
+  
+
+  console.log("Raster Metadata:", rasterMetadata);
+  console.log("geoBoundingBox", geoBoundingBox);
+  console.log("nodataValue", nodataValue);
+  console.log("dtype", dtype);
+  
+  if (dtype !== "float32") {
+    throw new Error(`Unsupported dtype: ${dtype}. Only float32 is supported.`);
+  }
+
+  const rawRasterResponse = await fetch(rawRasterUrl);
+  const rawRasterBuffer = await rawRasterResponse.arrayBuffer();
+
+  const floatRasterArray = new Float32Array(rawRasterBuffer);
+  console.log("Float Raster Data:", floatRasterArray);
+
+  const floatRasterData: FloatRaster = {
+    data: floatRasterArray,
+    width: width,
+    height: height,
+  };
+
+  console.time("decomposeFloatToUint24");
+  const multiChannelRaster = floatRasterToMultiChannelRaster(floatRasterData, {
+    polynomialSlope: 0.01,
+    polynomialOffset: -40,
+    nodataValue: nodataValue,
+    nbChannels: 2,
+  });
+  console.timeEnd("decomposeFloatToUint24");
+
+  console.log("multiChannelRaster", multiChannelRaster);
+  
+}
+
+
+// console.log(test01());
+test01()
