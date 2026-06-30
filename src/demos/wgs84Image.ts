@@ -3,9 +3,52 @@ import { getStyle, setLayerOpacity } from "basemapkit";
 import { Protocol } from "pmtiles";
 
 import { glyphs, lang, pmtiles, sprite } from "./constant";
-import { RemoteWgs84TextureTiledLayer } from "../lib/layers/RemoteWgs84TextureTiledLayer";
+import { RemoteWgs84TextureTiledLayer, type RemoteWgs84TextureTiledLayerOptions } from "../lib/layers/RemoteWgs84TextureTiledLayer";
 
-export async function wgs84GlobalDemo(globe: boolean) {
+const demoConfig: Record<string, RemoteWgs84TextureTiledLayerOptions> = {
+  "france-hi-magma": {
+    textureUrl: "/demo-tilesets/wgs84/france_hi_magma.png",
+    geoBoundingBox: {
+      lonMin: -12.005,
+      lonMax: 16.005,
+      latMin: 37.495,
+      latMax: 55.405,
+    },
+  },
+
+  "europe-magma": {
+    textureUrl: "/demo-tilesets/wgs84/europe_magma.png",
+    geoBoundingBox: {
+      lonMin: -32.05,
+      lonMax: 42.05,
+      latMin: 19.95,
+      latMax: 72.05,
+    },
+  },
+
+  "global-magma": {
+    textureUrl: "/demo-tilesets/wgs84/global_magma.png",
+    geoBoundingBox: {
+      lonMin: -180,
+      lonMax: 180,
+      latMin: -90,
+      latMax: 90,
+    },
+  },
+
+  "blue-marble": {
+    textureUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Blue_Marble_2002.png/3840px-Blue_Marble_2002.png",
+    geoBoundingBox: {
+      lonMin: -180,
+      lonMax: 180,
+      latMin: -90,
+      latMax: 90,
+    }
+  }
+}
+
+
+export async function wgs84ImageDemo(globe: boolean, demoName: keyof typeof demoConfig) {
   maplibregl.addProtocol("pmtiles", new Protocol().tile);
 
   const container = document.getElementById("map");
@@ -51,54 +94,8 @@ export async function wgs84GlobalDemo(globe: boolean) {
 
   await new Promise((resolve) => map.on("load", resolve));
 
-  // const layer = new RemoteWgs84TextureTiledLayer("wgs84-layer", {
-  //   textureUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Blue_Marble_2002.png/3840px-Blue_Marble_2002.png",
-  //   geoBoundingBox: {
-  //     lonMin: -180,
-  //     lonMax: 180,
-  //     latMin: -90,
-  //     latMax: 90,
-  //   },
-  // });
-  // map.addLayer(layer, "water");
-
-  /*
-  const layer = new RemoteWgs84TextureTiledLayer("wgs84-layer", {
-    textureUrl: "/demo-tilesets/wgs84/global_magma.png",
-    geoBoundingBox: {
-      lonMin: -180,
-      lonMax: 180,
-      latMin: -90,
-      latMax: 90,
-      // lonMin: -180.125,
-      // lonMax: 179.875,
-      // latMin: -90.125,
-      // latMax: 90.125,
-    },
-  });
-  map.addLayer(layer, "earth");
-  */
-
-  // const layer = new RemoteWgs84TextureTiledLayer("wgs84-layer", {
-  //   textureUrl: "/demo-tilesets/wgs84/europe_magma.png",
-  //   geoBoundingBox: {
-  //     lonMin: -32.05,
-  //     lonMax: 42.05,
-  //     latMin: 19.95,
-  //     latMax: 72.05,
-  //   },
-  // });
-  // map.addLayer(layer, "earth");
-
-  const layer = new RemoteWgs84TextureTiledLayer("wgs84-layer", {
-    textureUrl: "/demo-tilesets/wgs84/france_hi_magma.png",
-    geoBoundingBox: {
-      lonMin: -12.005,
-      lonMax: 16.005,
-      latMin: 37.495,
-      latMax: 55.405,
-    },
-  });
+  // Add the WGS84 image layer
+  const layer = new RemoteWgs84TextureTiledLayer("wgs84-layer", demoConfig[demoName]);
   map.addLayer(layer, "earth");
 
   opacitySlider.addEventListener("input", () => {

@@ -7,7 +7,7 @@ import { daylightDemo } from "./demos/daylight";
 import { simpletextureDemo } from "./demos/remotetexture";
 import { canvasTextureDemo } from "./demos/canvastexture";
 import { distanceDemo } from "./demos/distance";
-import { wgs84GlobalDemo } from "./demos/wgs84Global";
+import { wgs84ImageDemo } from "./demos/wgs84Image";
 
 const demos = {
   dummy: () => {
@@ -50,8 +50,20 @@ const demos = {
     weatherDaylightDemo("wind_speed_10m");
   },
 
+  "wgs84-blue-marble": () => {
+    wgs84ImageDemo(true, "blue-marble");
+  },
+
   "wgs84-global": () => {
-    wgs84GlobalDemo(true);
+    wgs84ImageDemo(true, "global-magma");
+  },
+
+  "wgs84-europe": () => {
+    wgs84ImageDemo(true, "europe-magma");
+  },
+
+  "wgs84-france": () => {
+    wgs84ImageDemo(true, "france-hi-magma");
   },
 } as const;
 
