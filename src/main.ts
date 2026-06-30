@@ -81,7 +81,6 @@ const demos = {
   "NZ-antemeridian3": () => {
     wgs84ImageDemo(true, "NZ-antemeridian3");
   },
-  
 } as const;
 
 (() => {

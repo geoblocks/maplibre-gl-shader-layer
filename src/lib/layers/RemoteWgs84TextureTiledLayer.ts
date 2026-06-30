@@ -10,17 +10,48 @@ import fragmentShader from "../shaders/wgs84-texture-untiled.f.glsl?raw";
 import { RemoteUntiledTextureManager } from "../core/RemoteUntiledTextureManager";
 
 export type GeoBoundingBox = {
+  /**
+   * Longitude of the west-most edge of the image.
+   */
   lonMin: number;
+
+  /**
+   * Longitude of the east-most edge of the image
+   */
   lonMax: number;
+
+  /**
+   * Latitude of the south-most edge of the image
+   */
   latMin: number;
+
+  /**
+   * Latitude of the north-most edge of the image
+   */
   latMax: number;
 };
 
 export type RemoteWgs84TextureTiledLayerOptions = {
   minZoom?: number;
   maxZoom?: number;
+  
+  /**
+   * URL to the texture to be used for this layer. The texture must be in WGS84 projection.
+   * It can be cover only a partial part of the globe, as long as the bbox is specified
+   * in the option `geoBoundingBox`
+   */
   textureUrl: string;
+
+  /**
+   * Bounding box covered by the image, in WGS84 coordinates
+   */
   geoBoundingBox: GeoBoundingBox;
+
+  /**
+   * Performs a bicubic interpolation of the texture, which leads to a more accurate
+   * and visualy smooth rendering (at some minor performance cost)
+   * Default: false
+   */
   bicubic?: boolean;
 
   /**
