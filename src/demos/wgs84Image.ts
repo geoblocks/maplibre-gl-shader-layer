@@ -3,7 +3,10 @@ import { getStyle, setLayerOpacity } from "basemapkit";
 import { Protocol } from "pmtiles";
 
 import { glyphs, lang, pmtiles, sprite } from "./constant";
-import { RemoteWgs84TextureTiledLayer, type RemoteWgs84TextureTiledLayerOptions } from "../lib/layers/RemoteWgs84TextureTiledLayer";
+import {
+  RemoteWgs84TextureTiledLayer,
+  type RemoteWgs84TextureTiledLayerOptions,
+} from "../lib/layers/RemoteWgs84TextureTiledLayer";
 
 const demoConfig: Record<string, RemoteWgs84TextureTiledLayerOptions> = {
   "france-hi-magma": {
@@ -36,17 +39,59 @@ const demoConfig: Record<string, RemoteWgs84TextureTiledLayerOptions> = {
     },
   },
 
+
+  "global-0-360": {
+    textureUrl: "/demo-tilesets/wgs84/rh_0-360.png",
+    geoBoundingBox: {
+      lonMin: 0,
+      lonMax: 360,
+      latMin: -90,
+      latMax: 90,
+    },
+  },
+
+
+  "NZ-antemeridian": {
+    textureUrl: "/demo-tilesets/wgs84/NZ.png",
+    geoBoundingBox: {
+      lonMin: 160,
+      lonMax: -160,
+      latMin: -50,
+      latMax: -30,
+    },
+  },
+
+  "NZ-antemeridian2": {
+    textureUrl: "/demo-tilesets/wgs84/NZ.png",
+    geoBoundingBox: {
+      lonMin: 160,
+      lonMax: 200,
+      latMin: -50,
+      latMax: -30,
+    },
+  },
+
+  "NZ-antemeridian3": {
+    textureUrl: "/demo-tilesets/wgs84/NZ.png",
+    geoBoundingBox: {
+      lonMin: -200,
+      lonMax: -160,
+      latMin: -50,
+      latMax: -30,
+    },
+  },
+
   "blue-marble": {
-    textureUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Blue_Marble_2002.png/3840px-Blue_Marble_2002.png",
+    textureUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Blue_Marble_2002.png/3840px-Blue_Marble_2002.png",
     geoBoundingBox: {
       lonMin: -180,
       lonMax: 180,
       latMin: -90,
       latMax: 90,
-    }
-  }
-}
-
+    },
+  },
+};
 
 export async function wgs84ImageDemo(globe: boolean, demoName: keyof typeof demoConfig) {
   maplibregl.addProtocol("pmtiles", new Protocol().tile);
@@ -83,9 +128,9 @@ export async function wgs84ImageDemo(globe: boolean, demoName: keyof typeof demo
 
   const map = new maplibregl.Map({
     container,
-    hash: false,
-    zoom: 4,
-    center: [27.35, 38.92],
+    hash: true,
+    // zoom: 4,
+    // center: [27.35, 38.92],
     style: style,
     maxPitch: 89,
   });

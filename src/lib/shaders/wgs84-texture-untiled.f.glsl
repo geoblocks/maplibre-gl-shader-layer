@@ -18,15 +18,100 @@ bool isInsideBoundingBox(vec2 lonLat, float lonMin, float lonMax, float latMin, 
   return (lonLat.x >= lonMin && lonLat.x <= lonMax && lonLat.y >= latMin && lonLat.y <= latMax);
 }
 
+// This cubic interpolation was borrowed from https://stackoverflow.com/a/42179924/5885003
+vec4 cubic(float v){
+  vec4 n = vec4(1.0, 2.0, 3.0, 4.0) - v;
+  vec4 s = n * n * n;
+  float x = s.x;
+  float y = s.y - 4.0 * s.x;
+  float z = s.z - 4.0 * s.y + 6.0 * s.x;
+  float w = 6.0 - x - y - z;
+  return vec4(x, y, z, w) * (1.0/6.0);
+}
+
+// This cubic interpolation was borrowed from https://stackoverflow.com/a/42179924/5885003
+vec4 textureBicubic(sampler2D tex, vec2 texCoords){
+  vec2 texSize = vec2(textureSize(tex, 0));
+  vec2 invTexSize = 1.0 / texSize;
+
+  texCoords = texCoords * texSize - 0.5;
+  vec2 fxy = fract(texCoords);
+  texCoords -= fxy;
+  vec4 xcubic = cubic(fxy.x);
+  vec4 ycubic = cubic(fxy.y);
+  vec4 c = texCoords.xxyy + vec2 (-0.5, +1.5).xyxy;
+  vec4 s = vec4(xcubic.xz + xcubic.yw, ycubic.xz + ycubic.yw);
+  vec4 offset = c + vec4 (xcubic.yw, ycubic.yw) / s;
+  offset *= invTexSize.xxyy;
+  vec4 sample0 = texture(tex, offset.xz);
+  vec4 sample1 = texture(tex, offset.yz);
+  vec4 sample2 = texture(tex, offset.xw);
+  vec4 sample3 = texture(tex, offset.yw);
+  float sx = s.x / (s.x + s.y);
+  float sy = s.z / (s.z + s.w);
+
+  return mix(
+    mix(sample3, sample2, sx), mix(sample1, sample0, sx)
+  ,sy);
+}
+
 void main()  {
+  float bboxLonMin = u_lonMin;
+  float bboxLonMax = u_lonMax;
+  float bboxLatMin = u_latMin;
+  float bboxLatMax = u_latMax;
+  vec2 lonLat = v_lonLat;
+
+  // handle the different cases for the bounding box.
+  // 0: normal case, no antimeridian crossing, lonMin < lonMax and both are in [-180, 180] (e.g., lonMin = -160, lonMax = 160)
+  // 1: crosses the antimeridian, lonMin > lonMax (e.g., lonMin = 160, lonMax = -160)
+  // 2: crosses the antimeridian, lonMin < lonMax and both are positive (e.g., lonMin = 160, lonMax = 200 or lonMin = 0, lonMax = 360)
+  // 3: crosses the antimeridian, lonMin < lonMax and both are negative (e.g., lonMin = -200, lonMax = -160)
+
+  // case 1.
+  // We recompute lonMax so that it is greater than lonMin, which will make lonMax greater than 180.
+  // For this reason, the current pixel longitude also needs to be adjusted to be greater than 180 if it is negative.
+  if (u_lonMin > u_lonMax) {
+    bboxLonMin = u_lonMin;
+    bboxLonMax = 360.0 + u_lonMax;
+
+    if (lonLat.x < 0.0) {
+      lonLat.x = 360.0 + lonLat.x;
+    }
+  } else
+
+  // case 2.
+  // The bbox remains as such but the pixel longitude must be made superior than 180 if negative
+  if (u_lonMin < u_lonMax && u_lonMin >= 0.0 && u_lonMax >= 0.0) {
+    if (lonLat.x < 0.0) {
+      lonLat.x = 360.0 + lonLat.x;
+    }
+  } else
+
+  // case 3.
+  // The bbox remains as such but the pixel longitude must be made lower than -180 if positive
+  if (u_lonMin < u_lonMax && u_lonMin <= 0.0 && u_lonMax <= 0.0) {
+    if (lonLat.x > 0.0) {
+      lonLat.x = -360.0 + lonLat.x;
+    }
+  }
   // Discard the fragment if the lonLat is outside the bounding box
-  if (!isInsideBoundingBox(v_lonLat, u_lonMin, u_lonMax, u_latMin, u_latMax)) {
+  if (!isInsideBoundingBox(lonLat, bboxLonMin, bboxLonMax, bboxLatMin, bboxLatMax)) {
     discard;
+    return;
   }
 
-  float texPositionX = (v_lonLat.x - u_lonMin) / (u_lonMax - u_lonMin);
-  float texPositionY = 1. - (v_lonLat.y - u_latMin) / (u_latMax - u_latMin);
-  vec2 texCoord = vec2(texPositionX, texPositionY);
-  fragColor = texture(u_tex, texCoord);
+  vec2 texCoord = vec2(
+    (lonLat.x - bboxLonMin) / (bboxLonMax - bboxLonMin),
+    1. - (lonLat.y - bboxLatMin) / (bboxLatMax - bboxLatMin)
+  );
+
+  bool biCubic = true;
+  if (biCubic) {
+    fragColor = textureBicubic(u_tex, texCoord);
+  } else {
+    // Bilinear interpolation
+    fragColor = texture(u_tex, texCoord);
+  }
   fragColor.a *= u_opacity;
 }

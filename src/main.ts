@@ -65,6 +65,22 @@ const demos = {
   "wgs84-france": () => {
     wgs84ImageDemo(true, "france-hi-magma");
   },
+
+  "wgs84-global-0-360": () => {
+    wgs84ImageDemo(true, "global-0-360");
+  },
+
+  "NZ-antemeridian": () => {
+    wgs84ImageDemo(true, "NZ-antemeridian");
+  },
+
+  "NZ-antemeridian2": () => {
+    wgs84ImageDemo(true, "NZ-antemeridian2");
+  },
+
+  "NZ-antemeridian3": () => {
+    wgs84ImageDemo(true, "NZ-antemeridian3");
+  }
 } as const;
 
 (() => {
