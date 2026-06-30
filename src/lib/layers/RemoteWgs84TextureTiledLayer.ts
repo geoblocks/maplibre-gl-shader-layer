@@ -34,7 +34,7 @@ export type GeoBoundingBox = {
 export type RemoteWgs84TextureTiledLayerOptions = {
   minZoom?: number;
   maxZoom?: number;
-  
+
   /**
    * URL to the texture to be used for this layer. The texture must be in WGS84 projection.
    * It can be cover only a partial part of the globe, as long as the bbox is specified

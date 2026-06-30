@@ -6,7 +6,7 @@ import { glyphs, lang, pmtiles, sprite } from "./constant";
 import {
   RemoteWgs84TextureTiledLayer,
   type RemoteWgs84TextureTiledLayerOptions,
-} from "../lib/layers/RemoteWgs84TextureTiledLayer";
+} from "../lib";
 
 const demoConfig: Record<string, RemoteWgs84TextureTiledLayerOptions> = {
   "france-hi-magma": {
