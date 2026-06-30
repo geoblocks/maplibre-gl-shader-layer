@@ -17,6 +17,7 @@ const demoConfig: Record<string, RemoteWgs84TextureTiledLayerOptions> = {
       latMin: 37.495,
       latMax: 55.405,
     },
+    bicubic: true,
   },
 
   "europe-magma": {
@@ -27,6 +28,7 @@ const demoConfig: Record<string, RemoteWgs84TextureTiledLayerOptions> = {
       latMin: 19.95,
       latMax: 72.05,
     },
+    bicubic: true,
   },
 
   "global-magma": {
@@ -37,8 +39,8 @@ const demoConfig: Record<string, RemoteWgs84TextureTiledLayerOptions> = {
       latMin: -90,
       latMax: 90,
     },
+    bicubic: true,
   },
-
 
   "global-0-360": {
     textureUrl: "/demo-tilesets/wgs84/rh_0-360.png",
@@ -48,8 +50,8 @@ const demoConfig: Record<string, RemoteWgs84TextureTiledLayerOptions> = {
       latMin: -90,
       latMax: 90,
     },
+    bicubic: true,
   },
-
 
   "NZ-antemeridian": {
     textureUrl: "/demo-tilesets/wgs84/NZ.png",
@@ -59,6 +61,7 @@ const demoConfig: Record<string, RemoteWgs84TextureTiledLayerOptions> = {
       latMin: -50,
       latMax: -30,
     },
+    bicubic: true,
   },
 
   "NZ-antemeridian2": {
@@ -69,6 +72,7 @@ const demoConfig: Record<string, RemoteWgs84TextureTiledLayerOptions> = {
       latMin: -50,
       latMax: -30,
     },
+    bicubic: true,
   },
 
   "NZ-antemeridian3": {
@@ -79,17 +83,19 @@ const demoConfig: Record<string, RemoteWgs84TextureTiledLayerOptions> = {
       latMin: -50,
       latMax: -30,
     },
+    bicubic: true,
   },
 
   "blue-marble": {
     textureUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Blue_Marble_2002.png/3840px-Blue_Marble_2002.png",
+      "https://assets.science.nasa.gov/content/dam/science/esd/eo/images/bmng/bmng-base/june/world.200406.3x5400x2700.jpg",
     geoBoundingBox: {
       lonMin: -180,
       lonMax: 180,
       latMin: -90,
       latMax: 90,
     },
+    bicubic: true,
   },
 };
 

@@ -2,6 +2,7 @@ precision highp float;
 precision highp int;
 
 uniform sampler2D u_tex;
+uniform bool u_bicubic;
 uniform float u_opacity;
 uniform float u_lonMin;
 uniform float u_lonMax;
@@ -101,13 +102,15 @@ void main()  {
     return;
   }
 
+  // Position inside the texture
   vec2 texCoord = vec2(
     (lonLat.x - bboxLonMin) / (bboxLonMax - bboxLonMin),
     1. - (lonLat.y - bboxLatMin) / (bboxLatMax - bboxLatMin)
   );
 
-  bool biCubic = true;
-  if (biCubic) {
+  // bicubic interpolation is more expensive than bilinear interpolation,
+  // so we only use it if the user requested it.
+  if (u_bicubic) {
     fragColor = textureBicubic(u_tex, texCoord);
   } else {
     // Bilinear interpolation

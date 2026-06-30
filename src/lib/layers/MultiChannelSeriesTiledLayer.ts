@@ -183,6 +183,12 @@ export type MultiChannelSeriesTiledLayerOptions = {
    * stored remotely as single files, require credentials, etc.
    */
   customTileTextureLoader?: CustomSeriesTileTextureLoader;
+
+  /**
+   * Whether to use bicubic interpolation when sampling the tile textures.
+   * Default: false
+   */
+  bicubic?: boolean;
 };
 
 export class MultiChannelSeriesTiledLayer extends BaseShaderTiledLayer {
@@ -197,6 +203,7 @@ export class MultiChannelSeriesTiledLayer extends BaseShaderTiledLayer {
   private readonly colormapGradient;
   private readonly remoteTileTextureManager: RemoteTileTextureManager;
   private readonly customTileTextureLoader: CustomSeriesTileTextureLoader | null = null;
+  private readonly bicubic: boolean;
 
   constructor(id: string, options: MultiChannelSeriesTiledLayerOptions) {
     super(id, {
@@ -215,6 +222,7 @@ export class MultiChannelSeriesTiledLayer extends BaseShaderTiledLayer {
     this.colormap = options.colormap;
     this.setSeriesAxisValue(options.seriesAxisValue ?? this.datasetSpecification.series[0].seriesAxisValue);
     this.remoteTileTextureManager = options.remoteTileTextureManager ?? new RemoteTileTextureManager();
+    this.bicubic = options.bicubic ?? false;
   }
 
   // Must be implemented
@@ -236,6 +244,7 @@ export class MultiChannelSeriesTiledLayer extends BaseShaderTiledLayer {
             size: this.colormapGradient ? 512 : 4096,
           }),
         },
+        u_bicubic: { value: this.bicubic },
       },
       fragmentShader: fragmentShader,
       defines: {

@@ -3,6 +3,7 @@ precision highp int;
 
 uniform sampler2D u_texBefore;
 uniform sampler2D u_texAfter;
+uniform bool u_bicubic;
 uniform float u_opacity;
 uniform float u_seriesAxisValueBefore;
 uniform float u_seriesAxisValueAfter;
@@ -69,12 +70,7 @@ vec4 getTextureColor(float realWorldValue) {
 
 
 float getRealWorldValue(sampler2D tex, inout bool isNodata) {
-  // Testing bicubic texture interpolation, but input data is too
-  // pixalated to make it worth it
-  // vec4 texColor = textureBicubic(tex, v_uv);
-
-  vec4 texColor = texture(tex, v_uv);
-
+  vec4 texColor = u_bicubic ? textureBicubic(tex, v_uv) : texture(tex, v_uv);
   isNodata = (texColor.a == 0.0);
 
   // For this test, we use the define RASTER_ENCODING_CHANNELS to know on what channel
