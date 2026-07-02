@@ -30,7 +30,14 @@ export type MultiChannelRaster = {
 };
 
 export type FloatRasterToMultiChannelRasterOptions = {
+  /**
+   * Precision step to capture in the multi-channel raster. If not provided, it will be computed from the min/max values of the raster.
+   */
   polynomialSlope?: number;
+
+  /**
+   * Minimal value to capture in the multi-channel raster. If not provided, it will be computed from the min/max values of the raster.
+   */
   polynomialOffset?: number;
   nodataValue?: number;
   nbChannels?: number;
@@ -140,7 +147,6 @@ export function floatRasterToMultiChannelRaster(
     uint8Array[redIndex + 2] = RGB[2];
     uint8Array[redIndex + 3] = 255;
   }
-
 
   return {
     data: uint8Array,

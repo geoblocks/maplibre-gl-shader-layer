@@ -3,7 +3,12 @@ import { getStyle, setLayerOpacity } from "basemapkit";
 import { Protocol } from "pmtiles";
 
 import { glyphs, lang, pmtiles, sprite } from "./constant";
-import { FloatRaster, floatRasterToMultiChannelRaster, RemoteWgs84TextureTiledLayer, type RemoteWgs84TextureTiledLayerOptions } from "../lib";
+import {
+  type FloatRaster,
+  floatRasterToMultiChannelRaster,
+  RemoteWgs84TextureTiledLayer,
+  type RemoteWgs84TextureTiledLayerOptions,
+} from "../lib";
 
 const demoConfig: Record<string, RemoteWgs84TextureTiledLayerOptions> = {
   "france-hi-magma": {
@@ -31,10 +36,10 @@ const demoConfig: Record<string, RemoteWgs84TextureTiledLayerOptions> = {
   "global-magma": {
     textureUrl: "/demo-tilesets/wgs84/global_magma.png",
     geoBoundingBox: {
-      lonMin: -180,
-      lonMax: 180,
-      latMin: -90,
-      latMax: 90,
+      lonMin: -180.125,
+      lonMax: 179.875,
+      latMin: -90.125,
+      latMax: 90.125,
     },
     bicubic: true,
   },
@@ -151,12 +156,9 @@ export async function wgs84ImageDemo(globe: boolean, demoName: keyof typeof demo
   });
 }
 
-
-
-
 async function test01() {
-  const rasterMetadataUrl = "/demo-tilesets/wgs84-float/europe-TMP/spec.json"
-  const rawRasterUrl = "public/demo-tilesets/wgs84-float/europe-TMP/TMP_2026-06-26T00:00:00Z.raw"
+  const rasterMetadataUrl = "/demo-tilesets/wgs84-float/europe-TMP/spec.json";
+  const rawRasterUrl = "public/demo-tilesets/wgs84-float/europe-TMP/TMP_2026-06-26T00:00:00Z.raw";
 
   const rasterMetadataResponse = await fetch(rasterMetadataUrl);
   const rasterMetadata = await rasterMetadataResponse.json();
@@ -171,15 +173,13 @@ async function test01() {
     lonMax: rasterMetadata.geo_origin_lon + rasterMetadata.pixel_size_degree.lon * width,
     latMin: rasterMetadata.geo_origin_lat + rasterMetadata.pixel_size_degree.lat * height,
     latMax: rasterMetadata.geo_origin_lat,
-  }
-
-  
+  };
 
   console.log("Raster Metadata:", rasterMetadata);
   console.log("geoBoundingBox", geoBoundingBox);
   console.log("nodataValue", nodataValue);
   console.log("dtype", dtype);
-  
+
   if (dtype !== "float32") {
     throw new Error(`Unsupported dtype: ${dtype}. Only float32 is supported.`);
   }
@@ -206,9 +206,7 @@ async function test01() {
   console.timeEnd("decomposeFloatToUint24");
 
   console.log("multiChannelRaster", multiChannelRaster);
-  
 }
 
-
 // console.log(test01());
-test01()
+test01();

@@ -64,38 +64,25 @@ void main()  {
   vec2 lonLat = v_lonLat;
 
   // handle the different cases for the bounding box.
-  // 0: normal case, no antimeridian crossing, lonMin < lonMax and both are in [-180, 180] (e.g., lonMin = -160, lonMax = 160)
+  // 0: basic case, no antimeridian crossing, lonMin < lonMax and both are in [-180, 180] (e.g., lonMin = -160, lonMax = 160)
   // 1: crosses the antimeridian, lonMin > lonMax (e.g., lonMin = 160, lonMax = -160)
   // 2: crosses the antimeridian, lonMin < lonMax and both are positive (e.g., lonMin = 160, lonMax = 200 or lonMin = 0, lonMax = 360)
   // 3: crosses the antimeridian, lonMin < lonMax and both are negative (e.g., lonMin = -200, lonMax = -160)
+  // 4: crosses the antimeridian, lonMin < lonMax but lonMin is lower than -180 (e.g. lonMin = -180.125, lonMax = 179.875)
 
-  // case 1.
-  // We recompute lonMax so that it is greater than lonMin, which will make lonMax greater than 180.
-  // For this reason, the current pixel longitude also needs to be adjusted to be greater than 180 if it is negative.
-  if (u_lonMin > u_lonMax) {
-    bboxLonMin = u_lonMin;
-    bboxLonMax = 360.0 + u_lonMax;
+  bool isBasicCase = bboxLonMin < bboxLonMax && bboxLonMin >= -180.0 && bboxLonMax <= 180.0;
 
-    if (lonLat.x < 0.0) {
-      lonLat.x = 360.0 + lonLat.x;
+  // With a non standard case, we need to wrap the lonLat.x value to be inside the bounding box,
+  // so that it can be used to sample the texture.
+  // Note: in theory, this should work well with the basic case too, but there are minor edge of texture rendering case
+  // that can happen when the lonLat.x is exactly equal to the bboxLonMin or bboxLonMax, so we avoid doing it in that case.
+  if (!isBasicCase) {
+    if (bboxLonMax < bboxLonMin) {
+      bboxLonMax += 360.0;
     }
-  } else
-
-  // case 2.
-  // The bbox remains as such but the pixel longitude must be made superior than 180 if negative
-  if (u_lonMin < u_lonMax && u_lonMin >= 0.0 && u_lonMax >= 0.0) {
-    if (lonLat.x < 0.0) {
-      lonLat.x = 360.0 + lonLat.x;
-    }
-  } else
-
-  // case 3.
-  // The bbox remains as such but the pixel longitude must be made lower than -180 if positive
-  if (u_lonMin < u_lonMax && u_lonMin <= 0.0 && u_lonMax <= 0.0) {
-    if (lonLat.x > 0.0) {
-      lonLat.x = -360.0 + lonLat.x;
-    }
+    lonLat.x = mod(lonLat.x - bboxLonMin, 360.0) + bboxLonMin;
   }
+
   // Discard the fragment if the lonLat is outside the bounding box
   if (!isInsideBoundingBox(lonLat, bboxLonMin, bboxLonMax, bboxLatMin, bboxLatMax)) {
     discard;
